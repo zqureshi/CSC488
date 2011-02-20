@@ -36,6 +36,7 @@
   structure as possible via the pattern, e.g. "1 or more" vs "0 or more", sub-parts, etc.
   Do this even if the level of detail isn't necessary for the result template, since
   this easily provides more error checking and documentation. |#
+
 (define-syntax-rule (match-rewriter clause ...)
   (lambda (id)
     (match id
@@ -52,8 +53,8 @@
 #| B. Rules for Desugaring Various Binders. |#
 (require "rewrite.rkt")
 (provide let→λ&call
-           letrec→let&set!
-           let*→nested-unary-lets)
+         letrec→let&set!
+         let*→nested-unary-lets)
 
 #| Write rules (that can be passed to 'rewrite') to do (one step) of rewriting:
      
@@ -64,11 +65,12 @@
  
  Style note: use as appropriate at least "`", ",", "." from the 'match' pattern language
    (and Scheme s-expression construction syntax), to express the pattern and result. |#
-(define let->λ&call
+
+(define let→λ&call
   (match-rewriter
    (`(let ([,var ,val] ...) . ,body) `((λ ,var . ,body) . ,val))))
 
-(define letrec->let&set!
+(define letrec→let&set!
   (match-rewriter
    (`(letrec ([,var ,val] ...) . ,body) (append 
                                          `(let ,(map (λ (x) `(,x (void))) var))
@@ -81,10 +83,11 @@
                                  (λ (vars acc) `(let (,vars) ,acc))
                                  `(let () . ,body)  ; append body to a let to make it executable
                                  vars))))
+
 #| Test Cases
-(rewrite let->λ&call '(let ([x 4] [y 5]) (+ x y) (+ y x)))
-(rewrite let->λ&call '(let ([x 4] [y 5]) x y)) 
-(rewrite let*→nested-unary-lets '(let* ([x 5] [y (+ x 5)] [z (+ y 5)]) (+ z 5)))|#
+(rewrite let→λ&call '(let ([x 4] [y 5]) (+ x y) (+ y x)))
+(rewrite let→λ&call '(let ([x 4] [y 5]) x y))
+(rewrite let*→nested-unary-lets '(let* ([x 5] [y (+ x 5)] [z (+ y 5)]) (+ z 5))) |#
 
 #| C. Rules for Desugaring Various Conditionals. |#
 #;(provide
@@ -106,3 +109,30 @@
    Be sure to avoid inserting an expression into the result multiple times in a way
     that if the result is run it might evaluate the expression multiple times: any
     side-effects will be repeated! |#
+
+(define when→if
+  (match-rewriter
+   (`(when ,expr . ,body) `(if ,expr (let () . ,body) (void)))))
+
+(define unless→when
+  (match-rewriter
+   (`(unless ,expr . ,body) `(when ,(not expr) (let () . ,body)))))
+
+(define and→if
+  (match-rewriter 
+   (`(and ,expr ...) (foldr (λ (expr acc) `(if ,expr ,acc #f)) #t expr))))
+
+(define or→if
+  (match-rewriter 
+   (`(or ,expr ...) (foldr (λ (expr acc) `(if ,expr #t ,acc)) #f expr))))
+
+(define cond→if
+  (match-rewriter 
+   (`(cond [,expr . ,body] ... [else . ,else-body]) (foldr (λ (expr body acc) `(if ,expr (let () . ,body) ,acc)) 
+                                                           `(let () . ,else-body) 
+                                                           expr
+                                                           body))
+   (`(cond [,expr . ,body] ...) (foldr (λ (expr body acc) `(if ,expr (let () . ,body) ,acc)) 
+                                       `(void)
+                                       expr
+                                       body))))
