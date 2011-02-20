@@ -68,18 +68,18 @@
 
 (define let→λ&call
   (match-rewriter
-   (`(let ([,var ,val] ...) . ,body) `((λ ,var . ,body) . ,val))))
+   (`(let ([,var ,val] ...) ,body ..1) `((λ ,var . ,body) . ,val))))
 
 (define letrec→let&set!
   (match-rewriter
-   (`(letrec ([,var ,val] ...) . ,body) (append 
+   (`(letrec ([,var ,val] ...) ,body ..1) (append 
                                          `(let ,(map (λ (x) `(,x (void))) var))
                                          (map (λ (var val) `(set! ,var ,val)) var val)
                                          body))))
 
 (define let*→nested-unary-lets
   (match-rewriter
-   (`(let* (,vars ...) . ,body) (foldr
+   (`(let* (,vars ...) ,body ..1) (foldr
                                  (λ (vars acc) `(let (,vars) ,acc))
                                  `(let () . ,body)  ; append body to a let to make it executable
                                  vars))))
@@ -90,7 +90,7 @@
 (rewrite let*→nested-unary-lets '(let* ([x 5] [y (+ x 5)] [z (+ y 5)]) (+ z 5))) |#
 
 #| C. Rules for Desugaring Various Conditionals. |#
-#;(provide
+(provide
    when→if unless→when
    and→if or→if
    cond→if)
@@ -112,11 +112,11 @@
 
 (define when→if
   (match-rewriter
-   (`(when ,expr . ,body) `(if ,expr (let () . ,body) (void)))))
+   (`(when ,expr ,body ..1) `(if ,expr (let () . ,body) (void)))))
 
 (define unless→when
   (match-rewriter
-   (`(unless ,expr . ,body) `(when ,(not expr) (let () . ,body)))))
+   (`(unless ,expr ,body ..1) `(when ,(not expr) (let () . ,body)))))
 
 (define and→if
   (match-rewriter 
@@ -128,11 +128,17 @@
 
 (define cond→if
   (match-rewriter 
-   (`(cond [,expr . ,body] ... [else . ,else-body]) (foldr (λ (expr body acc) `(if ,expr (let () . ,body) ,acc)) 
-                                                           `(let () . ,else-body) 
-                                                           expr
-                                                           body))
-   (`(cond [,expr . ,body] ...) (foldr (λ (expr body acc) `(if ,expr (let () . ,body) ,acc)) 
-                                       `(void)
-                                       expr
-                                       body))))
+   (`(cond [,expr . ,body] ... [else ,else-body ..1]) (foldr (λ (expr body acc)
+                                                               (if (empty? body)
+                                                                   `(if ,expr #t ,acc)
+                                                                   `(if ,expr (let () . ,body) ,acc)))
+                                                             `(let () . ,else-body)
+                                                             expr
+                                                             body))
+   (`(cond [,(and expr (not 'else)) . ,body] ...) (foldr (λ (expr body acc)
+                                                           (if (empty? body)
+                                                               `(if ,expr #t ,acc)
+                                                               `(if ,expr (let () . ,body) ,acc)))
+                                                         `(void)
+                                                         expr
+                                                         body))))
