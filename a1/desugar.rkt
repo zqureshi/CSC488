@@ -64,7 +64,13 @@
  
  Style note: use as appropriate at least "`", ",", "." from the 'match' pattern language
    (and Scheme s-expression construction syntax), to express the pattern and result. |#
+(define let->λ&call
+  (match-rewriter
+   (`(let ([,var ,val] ...) ,body ...) `((λ ,var . ,body) . ,val))))
 
+#| Test Cases |#
+(rewrite let->λ&call '(let ([x 4] [y 5]) (+ x y) (+ y x)))
+(rewrite let->λ&call '(let ([x 4] [y 5]) x y))
 
 #| C. Rules for Desugaring Various Conditionals. |#
 #;(provide
