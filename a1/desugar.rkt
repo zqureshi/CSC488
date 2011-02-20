@@ -16,7 +16,7 @@
 (require (rename-in (only-in racket/match match-lambda)
                     (match-lambda match-λ)))
 
-#;(provide match-rewriter)
+(provide match-rewriter)
 #| Write a syntactic form 'match-rewriter' that behaves like 'match-[lambda|λ]' in
     this form described in the documentation (i.e. the '=>' form isn't required):
       (match-lambda clause ...)
@@ -36,7 +36,18 @@
   structure as possible via the pattern, e.g. "1 or more" vs "0 or more", sub-parts, etc.
   Do this even if the level of detail isn't necessary for the result template, since
   this easily provides more error checking and documentation. |#
+(define-syntax-rule (match-rewriter clause ...)
+  (lambda (id)
+    (match id
+      clause ...
+      ; Add the extra no-match clause
+      (_ id))))
 
+#| Test Case |#
+(define test-rewriter
+  (match-rewriter
+    ('match 'YES)
+    ('matched 'YESed)))
 
 #| B. Rules for Desugaring Various Binders. |#
 (require "rewrite.rkt")
