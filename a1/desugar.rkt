@@ -51,7 +51,7 @@
 
 #| B. Rules for Desugaring Various Binders. |#
 (require "rewrite.rkt")
-#;(provide let→λ&call
+(provide let→λ&call
            letrec→let&set!
            let*→nested-unary-lets)
 
@@ -71,13 +71,20 @@
 (define letrec->let&set!
   (match-rewriter
    (`(letrec ([,var ,val] ...) . ,body) (append 
-                                           `(let ,(map (λ (x) `(,x (void))) var))
-                                           (map (λ (var val) `(set! ,var ,val)) var val)
-                                           body))))
+                                         `(let ,(map (λ (x) `(,x (void))) var))
+                                         (map (λ (var val) `(set! ,var ,val)) var val)
+                                         body))))
 
+(define let*→nested-unary-lets
+  (match-rewriter
+   (`(let* (,vars ...) . ,body) (foldr
+                                 (λ (vars acc) `(let (,vars) ,acc))
+                                 `(let () . ,body)  ; append body to a let to make it executable
+                                 vars))))
 #| Test Cases
 (rewrite let->λ&call '(let ([x 4] [y 5]) (+ x y) (+ y x)))
-(rewrite let->λ&call '(let ([x 4] [y 5]) x y)) |#
+(rewrite let->λ&call '(let ([x 4] [y 5]) x y)) 
+(rewrite let*→nested-unary-lets '(let* ([x 5] [y (+ x 5)] [z (+ y 5)]) (+ z 5)))|#
 
 #| C. Rules for Desugaring Various Conditionals. |#
 #;(provide
