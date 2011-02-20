@@ -43,11 +43,11 @@
       ; Add the extra no-match clause
       (_ id))))
 
-#| Test Case |#
+#| Test Cases
 (define test-rewriter
   (match-rewriter
     ('match 'YES)
-    ('matched 'YESed)))
+    ('matched 'YESed))) |#
 
 #| B. Rules for Desugaring Various Binders. |#
 (require "rewrite.rkt")
@@ -66,11 +66,18 @@
    (and Scheme s-expression construction syntax), to express the pattern and result. |#
 (define let->λ&call
   (match-rewriter
-   (`(let ([,var ,val] ...) ,body ...) `((λ ,var . ,body) . ,val))))
+   (`(let ([,var ,val] ...) . ,body) `((λ ,var . ,body) . ,val))))
 
-#| Test Cases |#
+(define letrec->let&set!
+  (match-rewriter
+   (`(letrec ([,var ,val] ...) . ,body) (append 
+                                           `(let ,(map (λ (x) `(,x (void))) var))
+                                           (map (λ (var val) `(set! ,var ,val)) var val)
+                                           body))))
+
+#| Test Cases
 (rewrite let->λ&call '(let ([x 4] [y 5]) (+ x y) (+ y x)))
-(rewrite let->λ&call '(let ([x 4] [y 5]) x y))
+(rewrite let->λ&call '(let ([x 4] [y 5]) x y)) |#
 
 #| C. Rules for Desugaring Various Conditionals. |#
 #;(provide
