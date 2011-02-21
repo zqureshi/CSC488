@@ -35,7 +35,7 @@
    'LOOKUP' returns the value of the variable
    'UPDATE!' take a third argument value and changes the variable's value to it
  Hint for style: 'findf'. |#
-#;(provide 'LOOKUP' 'UPDATE!')
+#;(provide LOOKUP UPDATE!)
 
 #| Make a struct 'Closure' with the fields 'environment', 'parameters' and 'function',
     for the three arguments to 'CLOSURE', so that one can simply: |#

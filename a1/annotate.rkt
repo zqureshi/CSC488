@@ -41,4 +41,18 @@
        → (CLOSURE ENV
                   '(<parameter-name> ...)
                   (λ (ENV) <stmt0> <stmt> ...) |#
-#;(provide annotate)
+(provide annotate)
+
+(define (annotate code)
+  (match code
+    [`(if ,expr ,br1 ,br2) `(if ,(annotate expr) ,(annotate br1) ,(annotate br2))]
+    [`(set! ,var ,expr) `(UPDATE! ENV ',var ,(annotate expr))]
+    [`(,(and (or 'lambda 'λ) lambda/λ) (,params ...) . ,body) `(CLOSURE ENV ',params
+                                                                        (λ (ENV) . ,(map annotate body)))]
+    [`(,fn ,args ...) `(CALL ,(annotate fn) (list . ,(map annotate args)))]
+    [(? symbol?) `(LOOKUP ENV ',code)]
+    [_ code]))
+
+#| Test Case
+> (annotate '(set! moo (λ (x) (+ x 1))))
+'(UPDATE! ENV 'moo (CLOSURE ENV '(x) (λ (ENV) (CALL (LOOKUP ENV '+) (list (LOOKUP ENV 'x) 1))))) |#
