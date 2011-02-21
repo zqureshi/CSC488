@@ -57,9 +57,24 @@
 
 #| Make a struct 'Closure' with the fields 'environment', 'parameters' and 'function',
     for the three arguments to 'CLOSURE', so that one can simply: |#
-#;(define CLOSURE Closure)
-#;(provide CLOSURE Closure)
+(struct Closure (environment parameters function) #:transparent)
+
+(define CLOSURE Closure)
+(provide CLOSURE Closure)
 
 #| Write 'CALL' taking a Closure and list of arguments, calling the Closure's function
     with its environment extended by adding the arguments to the environment. |#
-#;(provide CALL)
+(provide CALL)
+
+(define (CALL closure args)
+  ((Closure-function closure)
+   (append (map Binding (Closure-parameters closure) args) (Closure-environment closure))))
+
+#| Test Cases
+> (define ENV `(,(Binding 'z 15)))
+> (CALL (CLOSURE ENV '(x y) (λ (ENV) (LOOKUP ENV 'x))) '(5 10))
+5
+> (CALL (CLOSURE ENV '(x y) (λ (ENV) (LOOKUP ENV 'z))) '(5 10))
+15
+> (CALL (CLOSURE ENV '(z y) (λ (ENV) (LOOKUP ENV 'z))) '(5 10))
+5 |#
