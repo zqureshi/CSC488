@@ -15,7 +15,7 @@
  Also runs in Racket. |#
 
 #| Represent bindings (a value, and a variable name as symbol) with 'Binding': |#
-(struct Binding (id (value #:mutable)))
+(struct Binding (id (value #:mutable)) #:transparent)
 (provide Binding)
 #| Here Racket's 'struct' creates a type 'Binding' with named fields 'id' and 'value',
     with 'value' updatable, with the following support:
@@ -35,7 +35,25 @@
    'LOOKUP' returns the value of the variable
    'UPDATE!' take a third argument value and changes the variable's value to it
  Hint for style: 'findf'. |#
-#;(provide LOOKUP UPDATE!)
+(provide LOOKUP UPDATE!)
+
+#|  Helper to locate specific binding |#
+(define (find-binding env id)
+  (findf (λ (binding) 
+           (equal? (Binding-id binding) id)) 
+         env))
+
+(define (LOOKUP env id)
+  (Binding-value (find-binding env id)))
+
+(define (UPDATE! env id val)
+  (set-Binding-value! (find-binding env id) val))
+
+#| Test Case
+(define env (list (Binding 'x 5) (Binding 'y 10)))
+(LOOKUP env 'x)
+(UPDATE! env 'x 20)
+(LOOKUP env 'x) |#
 
 #| Make a struct 'Closure' with the fields 'environment', 'parameters' and 'function',
     for the three arguments to 'CLOSURE', so that one can simply: |#
