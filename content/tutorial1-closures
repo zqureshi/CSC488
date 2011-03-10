@@ -1,0 +1,127 @@
+Evaluation Time and Scope
+=========================
+Consider:
+
+  (define r1
+    (let ((r (random 10)))
+      (lambda ()
+        r))) ; wrote this code on a new line
+             ; for us to compare with r2
+
+One could imagine an extension to Java to allow this kind of thing (partly undoing their
+ distinction between expressions and statements):
+
+  // Imagine a block of statements allowed where an expression is expected
+  C r1 = {
+           int r = Math.random(10); // local to this block
+           new C(r); // pass *value* of r to new object,
+                     // `return' new object as value for r1
+         }
+
+In the Scheme version, local *variable* r is automatically `captured' and usable by the procedure.
+
+Executing the Scheme code:
+
+  1. Make global variable r1 (but no value yet).
+  2. Determine its initial value by:
+     A. Add local variables to environment:
+         i. Evaluate (random 10), let's pretend it's 7.
+        ii. Make local variable r, assign 7 to it.
+     B. Produce value, referencing current environment:
+         i. New procedure of no arguments that returns the value of r.
+  3. Assign the value (the procedure) to r1.
+
+  r1   => <procedure>
+  (r1) => 7
+  (r1) => 7
+  (r1) => 7
+  etc
+
+Consider now:
+
+  (define r2
+    (lambda ()
+      (let ((r (random 10)))
+        r)))
+
+Executing this:
+
+  1. Make global variable r2 (but no value yet).
+  2. Determine its initial value by:
+     A. Make a new procedure of no arguments that *when called later will*
+         determine its value by:
+        i. Add local variables to (the running procedure's) environment:
+           - Evaluate (random 10)
+           - Make local variable r, assign result of (random 10) to it.
+        ii. Produce value, referencing (the running procedure's environment):
+           - Value of r.
+  3. Assign the value (the procedure) to r2.
+
+  r2 => <procedure>
+  (r2) => 3
+  (r2) => 2
+  (r2) => 4
+  etc
+
+Consider now:
+
+  (define r3
+    (let ((b (random 10)))         ; while calculating r3's value
+      (lambda ()                   ; r3's value, a procedure linked to environment containing b
+        (let ((c (random 10)))     ; local to each call of r3's procedure
+          (lambda ()               ; result of a call to r3's procedure
+            (let ((d (random 10))) ; if that result is called
+              (for-each display (list b c d))))))))
+  ; b now has a value (pretend it's 5), a procedure has been made, and r3 refers to it
+
+
+  ; Yes, r3 refers to a procedure
+  r3     => <procedure> ; simply returns r3's procedure
+
+  (r3)   => <procedure> ; determines a c, usable by returned procedure
+  ((r3))                ; determines a c, pretend it's 8, usable by returned procedure
+                        ;  which is then called and determines a d, pretend it's 3
+                        ; displays 5 8 3
+  ((r3))                ; displays 5 <some-c> <some-d>, where these somethings can be
+                        ;  different than before, and below they can be different each time
+  (define p (r3))       ; determines a c, usable by returned procedure referred to by p,
+                        ;  let's pretend that c is 9
+  p => <procedure>      ; yes, p refers to a procedure
+  (p)                   ; displays 5 9 <some-d>
+  ((r3))                ; displays 5 <some-c> <some-d>
+  (p)                   ; displays 5 9 <some-d>
+  (set! p (r3))
+  (p)                   ; displays 5 <some-c> <some-d>
+
+Closures
+========
+People call procedures with a captured environment "closures".
+The environment really is captured, not just the values when the procedure was made.
+
+Consider:
+
+  (define p
+    (let ((a 0))
+      (lambda ()
+        (set! a (+ a 1)) ; can have sequence of expressions in a lambda, let, letrec and let*,
+        a)))             ;  evaluated in order (ones before the last for side-effects, otherwise pointless),
+                         ;  and value of last is returned
+                         ; in other contexts can use begin: (begin <expression1> ...)
+                         ; note that begin can be done with lambda: ((lambda () <expression1> ...))
+  (p) => 1
+  (p) => 2
+  etc
+
+  (define p
+    (let ((a 0)) ; made when variable p is made
+      (lambda () ; p refers to a procedure which returns procedures that manipulate a
+        (lambda ()
+          (set! a (+ a 1))
+          a))))
+
+  (define p1 (p))
+  (define p2 (p))
+  (p1) => 1
+  (p1) => 2
+  (p2) => 3
+  etc
