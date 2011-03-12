@@ -10,9 +10,9 @@
 (define Stack
   (pyClass ((storage '())
             (size 0)) ; yes, tracking size manually is silly
-           ((empty? self) (zero? (self 'size))) ; or (length (self 'storage))
            ((push! self o) (self 'storage `(,o . (self 'storage)))
                            (self 'size (add1 (self 'size))))
+           ((empty? self) (zero? (self 'size))) ; or (length (self 'storage))
            ((pop! self) (begin0 (first (self 'storage))
                                 (self 'storage (rest (self 'storage)))
                                 (self 'size (sub1 (self 'size)))))))
@@ -55,5 +55,6 @@
     (letrec ([<var> <val>] ...
              [self (λ (property . args)
                      (match property
-                       ['<var> (if (empty? args) <var> (set! <var> (first args)))] ...))])
+                       ['<var> (if (empty? args) <var> (set! <var> (first args)))] ...
+                       ['<func> (apply (λ (<self> <params> ...) <body> ...) self args)] ...))])
       self)))
