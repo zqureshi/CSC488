@@ -1,4 +1,8 @@
 #lang racket
+#| CSC 488 Winter 2011 - Assignment 2
+   
+   Zeeshan Qureshi <g0zee@cdf.toronto.edu>
+   Note: Extension granted by Professor Baumgartner. |#  
 
 #| Part I. CSC148/50 Pythonic classes. |#
 (provide pyClass)
@@ -10,9 +14,9 @@
 (define Stack
   (pyClass ((storage '())
             (size 0)) ; yes, tracking size manually is silly
+           ((empty? self) (zero? (self 'size))) ; or (length (self 'storage))
            ((push! self o) (self 'storage `(,o . (self 'storage)))
                            (self 'size (add1 (self 'size))))
-           ((empty? self) (zero? (self 'size))) ; or (length (self 'storage))
            ((pop! self) (begin0 (first (self 'storage))
                                 (self 'storage (rest (self 'storage)))
                                 (self 'size (sub1 (self 'size)))))))

@@ -1,4 +1,8 @@
 #lang racket
+#| CSC 488 Winter 2011 - Assignment 2
+   
+   Zeeshan Qureshi <g0zee@cdf.toronto.edu>
+   Note: Extension granted by Professor Baumgartner. |#  
 
 #| Part I: Completely Manual Interpreter. |#
 (provide interpret Binding)
