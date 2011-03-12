@@ -1,12 +1,12 @@
 #lang racket
 
 #| Part I. CSC148/50 Pythonic classes. |#
-#;(provide pyClass)
+(provide pyClass)
 
 #| Write 'pyClass', a variant of the posted 'class' from lecture.
    Part III will compile some CSC148/50 Python classes to this. |#
 
-#; ; A small example of usage.
+; A small example of usage.
 (define Stack
   (pyClass ((storage '())
             (size 0)) ; yes, tracking size manually is silly
@@ -48,6 +48,12 @@
         it will shadow the 'letrec' 'self') to receive it: replace 'arguments' with
         'self arguments' --- 'apply' can take initial arguments before the list of
         the rest. |#
-#;(define-syntax-rule
-    (pyClass ???)
-    (λ ???))
+(define-syntax-rule
+  (pyClass ((<var> <val>) ...)
+           ((<func> <self> <params> ...) <body> ...) ...)
+  (λ ()
+    (letrec ([<var> <val>] ...
+             [self (λ (property . args)
+                     (match property
+                       ['<var> (if (empty? args) <var> (set! <var> (first args)))] ...))])
+      self)))
