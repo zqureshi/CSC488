@@ -47,13 +47,15 @@ It also takes an environment, as a list of 'Binding's. |#
   (match exp
     [`(LOOKUP ,var) (LOOKUP env var)]
     [`(UPDATE! ,var ,expr) (let ([val (interpret expr env)])
-                            (UPDATE! env var val))]
+                             (UPDATE! env var val))]
     [`(CLOSURE (,param ...) ,body ...) (Closure env param body)]
+    [`(if ,cond ,conseq ,alt) (if (interpret cond env) (interpret conseq env) 
+                                  (interpret alt env))] 
     [`(CALL ,func-expr . ,args-expr) (let* ([clojure (interpret func-expr env)]
                                             [args (map (λ (expr) (interpret expr env)) args-expr)]
                                             [env (append
-                                                      (map Binding (Closure-parameters clojure) args)
-                                                      (Closure-environment clojure))])
+                                                  (map Binding (Closure-parameters clojure) args)
+                                                  (Closure-environment clojure))])
                                        (foldl (λ (stmt prev) (interpret stmt env)) 
                                               (void) (Closure-body clojure)))]
     [atomic-literal atomic-literal]))
