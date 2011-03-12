@@ -29,6 +29,15 @@ Write 'interpret' taking such code as a value/data,
   an unparsed string of characters.
 It also takes an environment, as a list of 'Binding's. |#
 (struct Binding (id (value #:mutable)) #:transparent)
+
+#| Approach: you are now managing code traversal, closure code
+    and environments. In particular, don't use 'eval', nor try
+    to create Scheme closures from the code.
+
+   You'll still want a Closure struct containing an environment
+    and parameter names, but instead of a 'function' field have a
+    'body' field containing code to interpret manually when the
+    instance of a closure is called. |#
 (struct Closure (environment parameters body) #:transparent)
 
 #|  Helper to locate specific binding |#
@@ -37,17 +46,11 @@ It also takes an environment, as a list of 'Binding's. |#
            (equal? (Binding-id binding) id))
          env))
 
-(define (LOOKUP env id)
-  (Binding-value (find-binding env id)))
-
-(define (UPDATE! env id val)
-  (set-Binding-value! (find-binding env id) val))
-
 (define (interpret exp env)
   (match exp
-    [`(LOOKUP ,var) (LOOKUP env var)]
+    [`(LOOKUP ,var) (Binding-value (find-binding env var))]
     [`(UPDATE! ,var ,expr) (let ([val (interpret expr env)])
-                             (UPDATE! env var val))]
+                             (set-Binding-value! (find-binding env var) val))]
     [`(CLOSURE (,param ...) ,body ...) (Closure env param body)]
     [`(if ,cond ,conseq ,alt) (if (interpret cond env) (interpret conseq env) 
                                   (interpret alt env))] 
@@ -59,12 +62,3 @@ It also takes an environment, as a list of 'Binding's. |#
                                        (foldl (λ (stmt prev) (interpret stmt env)) 
                                               (void) (Closure-body clojure)))]
     [atomic-literal atomic-literal]))
-
-#| Approach: you are now managing code traversal, closure code
-    and environments. In particular, don't use 'eval', nor try
-    to create Scheme closures from the code.
-
-   You'll still want a Closure struct containing an environment
-    and parameter names, but instead of a 'function' field have a
-    'body' field containing code to interpret manually when the
-    instance of a closure is called. |#
