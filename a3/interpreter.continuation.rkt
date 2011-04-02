@@ -66,8 +66,9 @@
       (If <e> _ _)
       (Set! _ <e>)
       (Sequence `(,<e> . ,_))) (push! exp) (push! env) (interpret <e> env)]
-    [(Call (Closure _ _ _) <arg>) (push! exp) (push! env) (interpret <arg> env)]
+    [(Call (or (Closure _ _ _) (Continuation _)) <arg>) (push! exp) (push! env) (interpret <arg> env)]
     [(Call <e> <arg>) (push! (Call '_ <arg>)) (push! env) (interpret <e> env)]
+    [(Call/CC <e>) (push! (Call '_ (Continuation RTS))) (push! env) (interpret <e> env)]
     [(Get id) (interpret-value (Binding-value (get-binding id env)))]
     [(Λ parameter body) (interpret-value (Closure env parameter body))]
     [value (interpret-value value)]))
@@ -92,6 +93,7 @@
         (match exp
           [(If _ then else) (if v (interpret then env) (interpret else env))]
           [(Set! id _) (set-Binding-value! (get-binding id env) v) (interpret-value v)]
+          [(Call (Continuation <stack>) _) (set! RTS <stack>) (interpret-value v)]
           [(Call (and (Closure _ _ _) <closure>) _) (interpret (Closure-body <closure>) 
                                                                (append (list (Binding (Closure-parameter <closure>) v)) 
                                                                        (Closure-environment <closure>)))]
@@ -101,7 +103,7 @@
                                             (interpret (Sequence <rest>) env))]))))
 
 ; Easy as 122.
-#;(for-each display
+(for-each display
           (list (interpret 1 '())
                 (interpret (If 1 2 3) '())
                 (interpret (Call/CC
