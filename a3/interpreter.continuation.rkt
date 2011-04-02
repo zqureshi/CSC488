@@ -16,7 +16,7 @@
 #| Structures representing code. |#
 (define-syntax-rule (structs (<name> <field> ...) ...)
   (begin (struct <name> (<field> ...) #:transparent) ...))
-;
+
 (structs
  (If test then else)
  (Set! id value)
@@ -60,7 +60,10 @@
    Structures are recognized by 'match' --- see 'get-binding' above.
    Boolean operations are also recognized by match: 'or' is quite useful.
    [And I used 'as' in 'unstable/match' to combine Call, Call/CC clauses.] |#
-#;(define (interpret exp env) . _)
+(define (interpret exp env)
+  (match exp
+    [(If test _ _) (push! exp) (push! env) (interpret test env)]
+    [value (interpret-value value)]))
 
 #| To interpet a value use the environment and waiting expression
     on the stack to determine what to do.
@@ -75,10 +78,15 @@
     so send it back as a 'Call' with that value instead of '_ .
     To call a 'Continuation', set the stack to be the continuation's
     stack and interpret the value again in this context. |#
-#;(define (interpret-value a) . _)
+(define (interpret-value v)
+  (if (empty? RTS) v
+      (let ([env (pop!)]
+            [exp (pop!)])
+        (match exp
+          [(If _ then else) (if v (interpret then env) (interpret else env))]))))
 
 ; Easy as 122.
-(for-each display
+#;(for-each display
           (list (interpret 1 '())
                 (interpret (If 1 2 3) '())
                 (interpret (Call/CC
