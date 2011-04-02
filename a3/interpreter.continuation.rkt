@@ -66,7 +66,10 @@
       (If <e> _ _)
       (Set! _ <e>)
       (Sequence `(,<e> . ,_))) (push! exp) (push! env) (interpret <e> env)]
+    [(Call (Closure _ _ _) <arg>) (push! exp) (push! env) (interpret <arg> env)]
+    [(Call <e> <arg>) (push! (Call '_ <arg>)) (push! env) (interpret <e> env)]
     [(Get id) (interpret-value (Binding-value (get-binding id env)))]
+    [(Λ parameter body) (interpret-value (Closure env parameter body))]
     [value (interpret-value value)]))
 
 #| To interpet a value use the environment and waiting expression
@@ -89,6 +92,10 @@
         (match exp
           [(If _ then else) (if v (interpret then env) (interpret else env))]
           [(Set! id _) (set-Binding-value! (get-binding id env) v) (interpret-value v)]
+          [(Call (and (Closure _ _ _) <closure>) _) (interpret (Closure-body <closure>) 
+                                                               (append (list (Binding (Closure-parameter <closure>) v)) 
+                                                                       (Closure-environment <closure>)))]
+          [(Call '_ <arg>) (interpret (Call v <arg>) env)]
           [(Sequence `(,<e> . ,<rest>)) (if (empty? <rest>) 
                                             v
                                             (interpret (Sequence <rest>) env))]))))
