@@ -86,7 +86,11 @@
       (let ([env (pop!)]
             [exp (pop!)])
         (match exp
-          [(If _ then else) (if v (interpret then env) (interpret else env))]))))
+          [(If _ then else) (if v (interpret then env) (interpret else env))]
+          [(Set! id _) (set-Binding-value! (get-binding id env) v)]
+          [(Sequence `(,<e> . ,<rest>)) (if (empty? <rest>) 
+                                            v
+                                            (interpret (Sequence <rest>) env))]))))
 
 ; Easy as 122.
 #;(for-each display
