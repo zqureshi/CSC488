@@ -66,6 +66,7 @@
       (If <e> _ _)
       (Set! _ <e>)
       (Sequence `(,<e> . ,_))) (push! exp) (push! env) (interpret <e> env)]
+    [(Get id) (interpret-value (Binding-value (get-binding id env)))]
     [value (interpret-value value)]))
 
 #| To interpet a value use the environment and waiting expression
@@ -87,7 +88,7 @@
             [exp (pop!)])
         (match exp
           [(If _ then else) (if v (interpret then env) (interpret else env))]
-          [(Set! id _) (set-Binding-value! (get-binding id env) v)]
+          [(Set! id _) (set-Binding-value! (get-binding id env) v) (interpret-value v)]
           [(Sequence `(,<e> . ,<rest>)) (if (empty? <rest>) 
                                             v
                                             (interpret (Sequence <rest>) env))]))))
