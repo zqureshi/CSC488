@@ -62,7 +62,10 @@
    [And I used 'as' in 'unstable/match' to combine Call, Call/CC clauses.] |#
 (define (interpret exp env)
   (match exp
-    [(If test _ _) (push! exp) (push! env) (interpret test env)]
+    [(or
+      (If <e> _ _)
+      (Set! _ <e>)
+      (Sequence `(,<e> . ,_))) (push! exp) (push! env) (interpret <e> env)]
     [value (interpret-value value)]))
 
 #| To interpet a value use the environment and waiting expression
