@@ -103,7 +103,7 @@
                                                                        (Closure-environment <closure>)))]
           [(Call '_ <arg>) (interpret (Call v <arg>) env)]
           [(Sequence `(,<e> . ,<rest>)) (if (empty? <rest>) 
-                                            v
+                                            (interpret-value v)
                                             (interpret (Sequence <rest>) env))]))))
 
 ; Easy as 122.
@@ -116,3 +116,7 @@
                                              (Call (Get 'x) 2)
                                              3))))
                        '())))
+
+; New test case that should have failed with the handling of sequence in old code
+(newline)
+(interpret (Call (Sequence (list (Λ 'x (Get 'x)))) 5) '())
